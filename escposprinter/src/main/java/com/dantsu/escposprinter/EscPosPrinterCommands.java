@@ -375,6 +375,8 @@ public class EscPosPrinterCommands {
 
         try {
             byte[] textBytes = text.getBytes(this.charsetEncoding.getName());
+            // TODO: Switch language mode properly
+            // Here inject some dirty code to switch language for Jolimark printer
             if(this.charsetEncoding.getName().equals("CN")) {
                 byte[] arr = new byte[]{0x1C, 0x26};
                 this.printerConnection.write(arr);
