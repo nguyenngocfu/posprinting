@@ -42,6 +42,8 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity {
 
 
+    private String language = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,13 +55,7 @@ public class MainActivity extends AppCompatActivity {
                 browseBluetoothDevice();
             }
         });
-        button = (Button) findViewById(R.id.button_bluetooth);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                printBluetooth(getDefaultPrintData());
-            }
-        });
+
         button = (Button) this.findViewById(R.id.button_usb);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,12 +74,31 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         String action = intent.getAction();
         Uri data = intent.getData();
+        EditText lang = findViewById(R.id.language);
+        language = lang.getText().toString();
+        if(language.isEmpty()) language = "16";
         if(data != null) {
             String textToBePrinted = data.getQueryParameter("content");
             /*selectDefaultPrinter();
             printBluetooth(textToBePrinted);*/
-            printAllConnectedDevice(textToBePrinted);
+            printAllConnectedDevice(textToBePrinted, language);
         }
+
+        button = (Button) findViewById(R.id.button_bluetooth);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                EditText lang = findViewById(R.id.language);
+                language = lang.getText().toString();
+                if(language.isEmpty()) language = "16";
+                printBluetooth(getDefaultPrintData(), language);
+            }
+        });
+
+        findViewById(R.id.button_test_chinese).setOnClickListener(v -> {
+            printBluetooth("英俊的", "950");
+         }
+        );
 
     }
 
@@ -99,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             switch (requestCode) {
                 case MainActivity.PERMISSION_BLUETOOTH:
-                    this.printBluetooth(getDefaultPrintData());
+                    this.printBluetooth(getDefaultPrintData(), language);
                     break;
             }
         }
@@ -146,15 +161,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void printBluetooth(String data) {
+    public void printBluetooth(String data, String language) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH}, MainActivity.PERMISSION_BLUETOOTH);
         } else {
-            new AsyncBluetoothEscPosPrint(this).execute(this.getAsyncEscPosPrinter(selectedDevice, data));
+            new AsyncBluetoothEscPosPrint(this).execute(this.getAsyncEscPosPrinter(selectedDevice, data, language));
         }
     }
 
-    public void printAllConnectedDevice(String data) {
+    public void printAllConnectedDevice(String data, String language) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH}, MainActivity.PERMISSION_BLUETOOTH);
         } else {
@@ -162,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
             if(bluetoothDevicesList != null && bluetoothDevicesList.length > 0) {
                 for(BluetoothConnection bc : bluetoothDevicesList) {
                     new AsyncBluetoothEscPosPrint(this).execute(this.getAsyncEscPosPrinter(bc,
-                    data));
+                    data, language));
                 }
             }
         }
@@ -184,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
                         if (usbManager != null && usbDevice != null) {
                             // printIt(new UsbConnection(usbManager, usbDevice));
                             new AsyncUsbEscPosPrint(context)
-                                    .execute(getAsyncEscPosPrinter(new UsbConnection(usbManager, usbDevice), getDefaultPrintData()));
+                                    .execute(getAsyncEscPosPrinter(new UsbConnection(usbManager, usbDevice), getDefaultPrintData(), "16"));
                         }
                     }
                 }
@@ -221,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             // this.printIt(new TcpConnection(ipAddress.getText().toString(), Integer.parseInt(portAddress.getText().toString())));
             new AsyncTcpEscPosPrint(this)
-                    .execute(this.getAsyncEscPosPrinter(new TcpConnection(ipAddress.getText().toString(), Integer.parseInt(portAddress.getText().toString())), data));
+                    .execute(this.getAsyncEscPosPrinter(new TcpConnection(ipAddress.getText().toString(), Integer.parseInt(portAddress.getText().toString())), data, "16"));
         } catch (NumberFormatException e) {
             new AlertDialog.Builder(this)
                     .setTitle("Invalid TCP port address")
@@ -307,41 +322,14 @@ public class MainActivity extends AppCompatActivity {
      * Asynchronous printing
      */
     @SuppressLint("SimpleDateFormat")
-    public AsyncEscPosPrinter getAsyncEscPosPrinter(DeviceConnection printerConnection, String data) {
+    public AsyncEscPosPrinter getAsyncEscPosPrinter(DeviceConnection printerConnection, String data, String language) {
         SimpleDateFormat format = new SimpleDateFormat("'on' yyyy-MM-dd 'at' HH:mm:ss");
-        AsyncEscPosPrinter printer = new AsyncEscPosPrinter(printerConnection, 203, 48f, 32);
+        AsyncEscPosPrinter printer = new AsyncEscPosPrinter(printerConnection, 203, 48f, 32, language);
         return printer.setTextToPrint(data);
     }
 
     private String getDefaultPrintData() {
         SimpleDateFormat format = new SimpleDateFormat("'on' yyyy-MM-dd 'at' HH:mm:ss");
-        return "[L]\n" +
-                "[C]<u><font size='big'>ORDER N°045</font></u>\n" +
-                "[L]\n" +
-                "[C]<u type='double'>" + format.format(new Date()) + "</u>\n" +
-                "[C]\n" +
-                "[C]================================\n" +
-                "[L]\n" +
-                "[L]<b>BEAUTIFUL SHIRT</b>[R]9.99€\n" +
-                "[L]  + Size : S\n" +
-                "[L]\n" +
-                "[L]<b>AWESOME HAT</b>[R]24.99€\n" +
-                "[L]  + Size : 57/58\n" +
-                "[L]\n" +
-                "[C]--------------------------------\n" +
-                "[R]TOTAL PRICE :[R]34.98€\n" +
-                "[R]TAX :[R]4.23€\n" +
-                "[L]\n" +
-                "[C]================================\n" +
-                "[L]\n" +
-                "[L]<u><font color='bg-black' size='tall'>Customer :</font></u>\n" +
-                "[L]Raymond DUPONT\n" +
-                "[L]5 rue des girafes\n" +
-                "[L]31547 PERPETES\n" +
-                "[L]Tel : +33801201456\n" +
-                "\n" +
-                "[C]<barcode type='ean13' height='10'>831254784551</barcode>\n" +
-                "[L]\n" +
-                "[C]<qrcode size='20'>http://www.developpeur-web.dantsu.com/</qrcode>\n";
+        return "英俊的 AWESOME HAT หล่อ सुंदरjeitosogut aussehend ハンサム красивый yakışıklı";
     }
 }

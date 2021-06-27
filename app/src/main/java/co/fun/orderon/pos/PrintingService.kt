@@ -100,7 +100,7 @@ class PrintingService : IntentService("PrintingService") {
         data: String?
     ): AsyncEscPosPrinter? {
         val format = SimpleDateFormat("'on' yyyy-MM-dd 'at' HH:mm:ss")
-        val printer = AsyncEscPosPrinter(printerConnection, 203, 48f, 32)
+        val printer = AsyncEscPosPrinter(printerConnection, 203, 48f, 32, "16")
         return printer.setTextToPrint(data)
     }
 

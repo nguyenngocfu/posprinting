@@ -1,2 +1,3 @@
 rootProject.name = "FunPOS"
 include ':app'
+include ':escposprinter'

@@ -52,17 +52,22 @@ public abstract class AsyncEscPosPrint extends AsyncTask<AsyncEscPosPrinter, Int
                 return AsyncEscPosPrint.FINISH_NO_PRINTER;
             }
 
+            boolean isCN = printerData.getLanguage().equalsIgnoreCase("936")
+                    || printerData.getLanguage().equalsIgnoreCase("950")
+                    || printerData.getLanguage().equalsIgnoreCase("951");
+            EscPosCharsetEncoding charsetEncoding = isCN ? new EscPosCharsetEncoding("CN", 950)
+                    : new EscPosCharsetEncoding("windows-1252", Integer.parseInt(printerData.getLanguage()));
             EscPosPrinter printer = new EscPosPrinter(
                     deviceConnection,
                     printerData.getPrinterDpi(),
                     printerData.getPrinterWidthMM(),
                     printerData.getPrinterNbrCharactersPerLine(),
-                    new EscPosCharsetEncoding("PC850", 2)
+                    charsetEncoding
             );
 
             this.publishProgress(AsyncEscPosPrint.PROGRESS_PRINTING);
 
-            printer.printFormattedTextAndCut(printerData.getTextToPrint());
+            printer.printFormattedTextAndCut(printerData.getTextToPrint() + " " + printerData.getLanguage());
 
             this.publishProgress(AsyncEscPosPrint.PROGRESS_PRINTED);
 
